@@ -86,22 +86,47 @@ function shouldProcessAllowance(
   frequency: string,
   now: Date
 ): boolean {
+  // Get the start of the current period
+  const periodStart = getPeriodStart(frequency, now);
+
+  // If never paid, pay now
   if (!lastPaid) return true;
 
   const lastPaidDate = new Date(lastPaid);
-  const diffMs = now.getTime() - lastPaidDate.getTime();
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+  // Pay if we haven't paid in the current period yet
+  // (lastPaid is before the start of the current period)
+  return lastPaidDate < periodStart;
+}
+
+// Get the start of the current allowance period
+function getPeriodStart(frequency: string, now: Date): Date {
+  const start = new Date(now);
 
   switch (frequency) {
     case "daily":
-      return diffDays >= 1;
+      // Start of today at 00:00
+      start.setHours(0, 0, 0, 0);
+      break;
+
     case "weekly":
-      return diffDays >= 7;
+      // Start of this week (Sunday at 00:00)
+      const dayOfWeek = start.getDay(); // 0 = Sunday
+      start.setDate(start.getDate() - dayOfWeek);
+      start.setHours(0, 0, 0, 0);
+      break;
+
     case "monthly":
-      return diffDays >= 30;
+      // Start of this month (1st at 00:00)
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+      break;
+
     default:
-      return false;
+      break;
   }
+
+  return start;
 }
 
 function capitalizeFirst(str: string): string {

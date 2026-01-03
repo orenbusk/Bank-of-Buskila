@@ -16,6 +16,8 @@ interface ProductListProps {
   balance: number;
   onPurchase?: (productId: string) => Promise<void>;
   isAdmin?: boolean;
+  purchasedThisWeek?: string[];
+  nextResetDate?: string;
 }
 
 export function ProductList({
@@ -23,6 +25,8 @@ export function ProductList({
   balance,
   onPurchase,
   isAdmin = false,
+  purchasedThisWeek = [],
+  nextResetDate,
 }: ProductListProps) {
   const [purchasing, setPurchasing] = useState<string | null>(null);
 
@@ -46,15 +50,25 @@ export function ProductList({
     );
   }
 
+  // Format the next reset date for display
+  const formatResetDate = () => {
+    if (!nextResetDate) return "";
+    const date = new Date(nextResetDate);
+    return date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {activeProducts.map((product) => {
         const canAfford = balance >= product.price;
+        const alreadyPurchased = purchasedThisWeek.includes(product.id);
+        const canBuy = canAfford && !alreadyPurchased;
+
         return (
           <div
             key={product.id}
             className={`bg-white border rounded-xl p-4 shadow-sm ${
-              !product.active ? "opacity-50" : ""
+              !product.active || alreadyPurchased ? "opacity-60" : ""
             }`}
           >
             <div className="flex justify-between items-start mb-2">
@@ -66,9 +80,19 @@ export function ProductList({
                   Inactive
                 </span>
               )}
+              {alreadyPurchased && product.active && (
+                <span className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded">
+                  Purchased
+                </span>
+              )}
             </div>
             {product.description && (
               <p className="text-gray-600 text-sm mb-3">{product.description}</p>
+            )}
+            {alreadyPurchased && nextResetDate && (
+              <p className="text-xs text-orange-600 mb-2">
+                Available again: {formatResetDate()}
+              </p>
             )}
             <div className="flex items-center justify-between mt-auto">
               <span className="text-xl font-bold text-bud-600">
@@ -77,15 +101,17 @@ export function ProductList({
               {onPurchase && product.active && (
                 <button
                   onClick={() => handlePurchase(product.id)}
-                  disabled={!canAfford || purchasing === product.id}
+                  disabled={!canBuy || purchasing === product.id}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    canAfford
+                    canBuy
                       ? "bg-bud-600 text-white hover:bg-bud-700"
                       : "bg-gray-200 text-gray-500 cursor-not-allowed"
                   }`}
                 >
                   {purchasing === product.id
                     ? "..."
+                    : alreadyPurchased
+                    ? "Bought"
                     : canAfford
                     ? "Buy"
                     : "Not enough BUD"}

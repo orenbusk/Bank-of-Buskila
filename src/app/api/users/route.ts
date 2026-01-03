@@ -96,13 +96,19 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id, name, email, role, approved, balance } = await req.json();
+    const { id, name, email, role, approved, balance, password } = await req.json();
 
     if (!id) {
       return NextResponse.json(
         { error: "User ID is required" },
         { status: 400 }
       );
+    }
+
+    // Hash password if provided
+    let hashedPassword: string | undefined;
+    if (password) {
+      hashedPassword = await bcrypt.hash(password, 12);
     }
 
     const user = await prisma.user.update({
@@ -113,6 +119,7 @@ export async function PUT(req: NextRequest) {
         ...(role !== undefined && { role }),
         ...(approved !== undefined && { approved }),
         ...(balance !== undefined && { balance: Math.floor(balance) }),
+        ...(hashedPassword && { password: hashedPassword }),
       },
     });
 

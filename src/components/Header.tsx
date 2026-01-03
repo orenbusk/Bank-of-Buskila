@@ -22,6 +22,12 @@ export function Header() {
                 </span>
               )}
             </span>
+            <Link
+              href="/settings"
+              className="text-bud-100 hover:text-white transition-colors"
+            >
+              Settings
+            </Link>
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
               className="px-4 py-2 bg-bud-700 hover:bg-bud-800 rounded-lg transition-colors"

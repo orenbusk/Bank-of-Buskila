@@ -8,6 +8,56 @@ import { TransactionHistory } from "@/components/TransactionHistory";
 import { KidsList } from "@/components/KidsList";
 import { ProductStore } from "./ProductStore";
 
+// Get the last Saturday at 23:59 (weekly reset time)
+function getLastSaturdayReset(): Date {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+
+  let daysSinceSaturday: number;
+  if (dayOfWeek === 6) {
+    const saturdayReset = new Date(now);
+    saturdayReset.setHours(23, 59, 0, 0);
+    if (now >= saturdayReset) {
+      daysSinceSaturday = 0;
+    } else {
+      daysSinceSaturday = 7;
+    }
+  } else {
+    daysSinceSaturday = dayOfWeek === 0 ? 1 : dayOfWeek + 1;
+  }
+
+  const lastSaturday = new Date(now);
+  lastSaturday.setDate(now.getDate() - daysSinceSaturday);
+  lastSaturday.setHours(23, 59, 0, 0);
+
+  return lastSaturday;
+}
+
+// Get the next Saturday at 23:59
+function getNextSaturdayReset(): Date {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+
+  let daysUntilSaturday: number;
+  if (dayOfWeek === 6) {
+    const saturdayReset = new Date(now);
+    saturdayReset.setHours(23, 59, 0, 0);
+    if (now >= saturdayReset) {
+      daysUntilSaturday = 7;
+    } else {
+      daysUntilSaturday = 0;
+    }
+  } else {
+    daysUntilSaturday = 6 - dayOfWeek;
+  }
+
+  const nextSaturday = new Date(now);
+  nextSaturday.setDate(now.getDate() + daysUntilSaturday);
+  nextSaturday.setHours(23, 59, 0, 0);
+
+  return nextSaturday;
+}
+
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
 
@@ -44,6 +94,24 @@ export default async function DashboardPage() {
     orderBy: { price: "asc" },
   });
 
+  // Get this week's purchases for the user
+  const lastReset = getLastSaturdayReset();
+  const thisWeekPurchases = await prisma.transaction.findMany({
+    where: {
+      userId: user.id,
+      type: "purchase",
+      productId: { not: null },
+      createdAt: { gte: lastReset },
+    },
+    select: { productId: true },
+  });
+
+  const purchasedThisWeek = thisWeekPurchases
+    .map((t) => t.productId)
+    .filter((id): id is string => id !== null);
+
+  const nextReset = getNextSaturdayReset();
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -60,7 +128,12 @@ export default async function DashboardPage() {
             <h2 className="text-xl font-semibold text-gray-800 mb-4">
               Buy Something
             </h2>
-            <ProductStore products={products} balance={user.balance} />
+            <ProductStore
+              products={products}
+              balance={user.balance}
+              purchasedThisWeek={purchasedThisWeek}
+              nextResetDate={nextReset.toISOString()}
+            />
           </section>
 
           <section>

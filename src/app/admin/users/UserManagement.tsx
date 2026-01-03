@@ -29,6 +29,7 @@ export function UserManagement({ users }: UserManagementProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBalanceModal, setShowBalanceModal] = useState<string | null>(null);
   const [showAllowanceModal, setShowAllowanceModal] = useState<string | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState<string | null>(null);
 
   const handleDelete = async (userId: string, userName: string) => {
     if (!confirm(`Are you sure you want to delete ${userName}'s account? This cannot be undone.`)) {
@@ -109,28 +110,34 @@ export function UserManagement({ users }: UserManagementProps) {
                     ? `${formatBUD(user.allowanceConfig.amount)} / ${user.allowanceConfig.frequency}`
                     : "None"}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                  <div className="flex gap-2 justify-end">
+                <td className="px-6 py-4 text-right text-sm">
+                  <div className="flex flex-wrap gap-2 justify-end">
                     {user.role === "kid" && (
                       <>
                         <button
                           onClick={() => setShowBalanceModal(user.id)}
-                          className="text-bud-600 hover:text-bud-700"
+                          className="px-2 py-1 text-xs bg-bud-50 text-bud-700 rounded hover:bg-bud-100"
                         >
                           Adjust
                         </button>
                         <button
                           onClick={() => setShowAllowanceModal(user.id)}
-                          className="text-blue-600 hover:text-blue-700"
+                          className="px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
                         >
                           Allowance
                         </button>
                       </>
                     )}
+                    <button
+                      onClick={() => setShowPasswordModal(user.id)}
+                      className="px-2 py-1 text-xs bg-orange-50 text-orange-700 rounded hover:bg-orange-100"
+                    >
+                      Password
+                    </button>
                     {user.role === "kid" && (
                       <button
                         onClick={() => handleDelete(user.id, user.name)}
-                        className="text-red-600 hover:text-red-700"
+                        className="px-2 py-1 text-xs bg-red-50 text-red-700 rounded hover:bg-red-100"
                       >
                         Delete
                       </button>
@@ -173,6 +180,18 @@ export function UserManagement({ users }: UserManagementProps) {
           onClose={() => setShowAllowanceModal(null)}
           onSuccess={() => {
             setShowAllowanceModal(null);
+            router.refresh();
+          }}
+        />
+      )}
+
+      {showPasswordModal && (
+        <ResetPasswordModal
+          userId={showPasswordModal}
+          userName={users.find((u) => u.id === showPasswordModal)?.name || ""}
+          onClose={() => setShowPasswordModal(null)}
+          onSuccess={() => {
+            setShowPasswordModal(null);
             router.refresh();
           }}
         />
@@ -485,6 +504,111 @@ function AllowanceModal({
             className="px-4 py-2 bg-bud-600 text-white rounded-lg disabled:opacity-50"
           >
             {loading ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function ResetPasswordModal({
+  userId,
+  userName,
+  onClose,
+  onSuccess,
+}: {
+  userId: string;
+  userName: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: userId, password }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to reset password");
+      }
+
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to reset password");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal title={`Reset Password: ${userName}`} onClose={onClose}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="p-3 bg-red-100 text-red-700 rounded">{error}</div>
+        )}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            New Password
+          </label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-4 py-2 border rounded-lg"
+            placeholder="Enter new password"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Confirm Password
+          </label>
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="w-full px-4 py-2 border rounded-lg"
+            placeholder="Confirm new password"
+            required
+          />
+        </div>
+        <div className="flex gap-2 justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 border rounded-lg"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-4 py-2 bg-orange-600 text-white rounded-lg disabled:opacity-50 hover:bg-orange-700"
+          >
+            {loading ? "Resetting..." : "Reset Password"}
           </button>
         </div>
       </form>

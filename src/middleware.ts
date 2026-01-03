@@ -28,7 +28,8 @@ export default withAuth(
           path === "/login" ||
           path === "/register" ||
           path === "/pending-approval" ||
-          path.startsWith("/api/auth")
+          path.startsWith("/api/auth") ||
+          path === "/api/allowance/process" // Cron job (auth handled by CRON_SECRET)
         ) {
           return true;
         }

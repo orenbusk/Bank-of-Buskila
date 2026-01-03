@@ -15,9 +15,11 @@ interface Product {
 interface ProductStoreProps {
   products: Product[];
   balance: number;
+  purchasedThisWeek: string[];
+  nextResetDate: string;
 }
 
-export function ProductStore({ products, balance }: ProductStoreProps) {
+export function ProductStore({ products, balance, purchasedThisWeek, nextResetDate }: ProductStoreProps) {
   const router = useRouter();
   const [error, setError] = useState("");
 
@@ -33,7 +35,7 @@ export function ProductStore({ products, balance }: ProductStoreProps) {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Purchase failed");
+        throw new Error(data.message || data.error || "Purchase failed");
       }
 
       router.refresh();
@@ -49,7 +51,13 @@ export function ProductStore({ products, balance }: ProductStoreProps) {
           {error}
         </div>
       )}
-      <ProductList products={products} balance={balance} onPurchase={handlePurchase} />
+      <ProductList
+        products={products}
+        balance={balance}
+        onPurchase={handlePurchase}
+        purchasedThisWeek={purchasedThisWeek}
+        nextResetDate={nextResetDate}
+      />
     </div>
   );
 }
