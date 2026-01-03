@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/allowance/process",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}

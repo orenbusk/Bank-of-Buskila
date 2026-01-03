@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd /c \"cd /d C:\\\\Users\\\\orenb\\\\OneDrive\\\\Documents\\\\code projects\\\\kids_bank && npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias @/* --use-npm --no-turbopack\")",
+      "Bash(cmd /c:*)",
+      "Bash(powershell -Command \"cd ''C:\\\\Users\\\\orenb\\\\OneDrive\\\\Documents\\\\code projects\\\\kids_bank''; npm install\")",
+      "Bash(npm install)",
+      "Bash(dir:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npm run dev:*)"
+    ]
+  }
+}
